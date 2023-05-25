@@ -18,8 +18,9 @@ const Sidebar: React.FC<Props> = ({ handleButtonClick, selectedButton }) => {
     // 'Load Balancer',
     // 'ECS',
     // 'EKS'
-    "Edit EC2 Instance",
+    "Edit EC2",
     "Create S3",
+    "Edit S3",
   ];
 
   return (

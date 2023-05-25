@@ -3,6 +3,9 @@ import "./ContentArea.css";
 import GitComponent from "../components/GitComponent";
 import Gitedittest from "../components/Gitedittest";
 import swal from "sweetalert";
+
+import S3editComponent from "./S3editComponent";
+
 // import Gitviewer from "../components/Gitviewer";
 
 interface ContentAreaProps {
@@ -23,6 +26,8 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
   const [field5, setField5] = useState("");
   const [field6, setField6] = useState("");
   const [field7, setField7] = useState("");
+  const [field8, setField8] = useState("");
+  const [field9, setField9] = useState("");
   const [amiOptions, setAmiOptions] = useState<AmiOption[]>([]);
   const [regionOptions, setRegionOptions] = useState<AmiOption[]>([]);
   const [instancetypesOptions, setinstancetypesOptions] = useState<AmiOption[]>(
@@ -85,9 +90,15 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
   const handleField6Change = (event: React.ChangeEvent<HTMLInputElement>) => {
     setField6(event.target.value);
   };
-  // const handleField7Change = (event: React.ChangeEvent<HTMLInputElement>) => {
-  //   setField7(event.target.value);
-  // };
+  const handleField7Change = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setField7(event.target.value);
+  };
+  const handleField8Change = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setField8(event.target.value);
+  };
+  const handleField9Change = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setField9(event.target.value);
+  };
   function handleSelectChange(event: {
     target: { value: React.SetStateAction<string> };
   }) {
@@ -98,7 +109,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
     const apiUrl = "https://api.github.com";
     const repoOwner = "SharanyaDevunuri";
     const repoName = "terraformRepo";
-    const folderNames = "myapp";
+    const folderNames = "EC2";
 
     // Step 1: Create the content in the desired format
     const content =
@@ -118,13 +129,12 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
     // Step 3: Get the existing file contents from GitHub
     // const fileUrl = `${apiUrl}/repos/${repoOwner}/${repoName}/contents/${folderName}/sample/terraforms.tfvars`;
 
-    const randomFolderName =
-      field4 + "_" + Math.random().toString(36).substring(7);
+    const randomFolderName = field4;
 
     const folderName = selectedFolder
       ? selectedFolder + "/" + randomFolderName
       : randomFolderName;
-    const filePath = `myapp/${folderName}/terraforms.tfvars`;
+    const filePath = `EC2/${folderName}/terraforms.tfvars`;
     const fileUrl = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${filePath}`;
 
     // const folderName = selectedFolder
@@ -152,7 +162,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
     const requestOptions = {
       method: "PUT",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: "Bearer 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",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -205,20 +215,129 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
     // });
   };
 
+  const handleSubmitS3 = async () => {
+    const apiUrl = "https://api.github.com";
+    const repoOwner = "SharanyaDevunuri";
+    const repoName = "terraformRepo";
+    const folderNames = "S3";
+
+    // Step 1: Create the content in the desired format
+    const content =
+      `account = "${field5}"\n` +
+      `name = "${field4}"\n` +
+      `app = "${field6}"\n` +
+      `bucketName = "${field9}"\n` +
+      // `instance_type = "${field3}"\n` +
+      // `ami_id = "${field2}"\n` +
+      `Environment = "${field8}"\n` +
+      `action = "${field7}"\n`;
+    //`action = "${field7}"\n`
+    // Step 2: Encode the content to base64
+    const contentEncoded = window.btoa(content);
+
+    // Step 3: Get the existing file contents from GitHub
+    // const fileUrl = `${apiUrl}/repos/${repoOwner}/${repoName}/contents/${folderName}/sample/terraforms.tfvars`;
+
+    const randomFolderName = field4;
+
+    const folderName = selectedFolder
+      ? selectedFolder + "/" + randomFolderName
+      : randomFolderName;
+    const filePath = `S3/${randomFolderName}/terraforms.tfvars  `;
+    const fileUrl = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${filePath}`;
+
+    // const folderName = selectedFolder
+    //   ? randomFolderName
+    //   : selectedFolder + "/" + randomFolderName;
+
+    // const filePath = `myapp/${folderName}/terraforms.tfvars`;
+    // const url = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/myapp/${folderName}`;
+    console.log(fileUrl);
+    const response = await fetch(fileUrl);
+    const data = await response.json();
+    const existingContent = data.content;
+
+    // Step 4: Compare the existing and new contents
+    if (contentEncoded === existingContent) {
+      console.log("Content is already up to date.");
+      return;
+    }
+
+    // Step 5: Create or update the file on GitHub
+    const branch = "main";
+    const commitMessage = "Update terraforms.tfvars";
+    const updateUrl = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${filePath}`;
+
+    const requestOptions = {
+      method: "PUT",
+      headers: {
+        Authorization: "Bearer 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",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message: commitMessage,
+        content: contentEncoded,
+        branch: branch,
+        sha: data.sha,
+      }),
+    };
+
+    try {
+      // Create or update the file
+      const updateResponse = await fetch(updateUrl, requestOptions);
+      const updateData = await updateResponse.json();
+      console.log("File updated successfully:", updateData);
+
+      // Trigger Jenkins build
+      const jenkinsUrl = "http://localhost:9071/data/trigger-jenkins-builds";
+      const jenkinsParams = new URLSearchParams();
+      jenkinsParams.append("NAME", field4);
+      jenkinsParams.append("ENVIRONMENT", field8);
+      jenkinsParams.append("BUCKET_NAME", field9);
+      jenkinsParams.append("ACCOUNT", field5);
+      jenkinsParams.append("APP", field6);
+      jenkinsParams.append("ACTION", field7);
+      //jenkinsParams.append("ACTION", field7);
+
+      const jenkinsRequestOptions = {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: jenkinsParams.toString(),
+      };
+
+      const jenkinsResponse = await fetch(jenkinsUrl, jenkinsRequestOptions);
+      const jenkinsData = await jenkinsResponse.json();
+      console.log("Jenkins build triggered:", jenkinsData);
+    } catch (error) {
+      console.error("Error updating file or triggering Jenkins build:", error);
+    }
+
+    swal({
+      title: "SUBMITTED",
+      text: "S3 Created",
+      icon: "success",
+    });
+    // .then(function () {
+    //   window.location.href = "http://localhost:3000/EditUser/undefined";
+    // });
+  };
+
   const renderFields = () => {
     if (selectedButton === "Create EC2") {
       return (
         <>
           <div className="form-field">
-            <label>ACCOUNT</label>
+            <label>ACCOUNT (Account name)</label>
             <input type="text" value={field5} onChange={handleField5Change} />
           </div>
           <div className="form-field">
-            <label>NAME</label>
+            <label>NAME (Name of person)</label>
             <input type="text" value={field4} onChange={handleField4Change} />
           </div>
           <div className="form-field">
-            <label>APP</label>
+            <label>APP (App config name)</label>
             <input type="text" value={field6} onChange={handleField6Change} />
           </div>
           <div className="form-field">
@@ -300,34 +419,55 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
           <button onClick={handleSubmit}>Submit</button>
         </>
       );
-    } else if (selectedButton === "S3") {
+    } else if (selectedButton === "Create S3") {
       return (
         <>
           <div className="form-field">
-            <label>Field 1</label>
-            <select value={field1} onChange={handleField1Change}>
-              <option value="">Please select an option</option>
-              <option value="Option 1">Option 1</option>
-              <option value="Option 2">Option 2</option>
-              <option value="Option 3">Option 3</option>
-            </select>
+            <label>ACCOUNT(Name of the Account)</label>
+            <input type="text" value={field5} onChange={handleField5Change} />
           </div>
           <div className="form-field">
-            <label>Field 2</label>
-            <select value={field2} onChange={handleField2Change}>
-              <option value="">Please select an option</option>
-              <option value="Option A">Option A</option>
-              <option value="Option B">Option B</option>
-              <option value="Option C">Option C</option>
+            <label>NAME (Name of the person)</label>
+            <input type="text" value={field4} onChange={handleField4Change} />
+          </div>
+          <div className="form-field">
+            <label>APP (App config name)</label>
+            <input type="text" value={field6} onChange={handleField6Change} />
+          </div>
+
+          <div className="form-field">
+            <label>ENVIRONMENT</label>
+            <input type="text" value={field8} onChange={handleField8Change} />
+          </div>
+          <div className="form-field">
+            <label>BUCKET NAME</label>
+            <input type="text" value={field9} onChange={handleField9Change} />
+          </div>
+          <div className="form-field">
+            <label>ACTION</label>
+            <select value={field7} onChange={handleSelectChange}>
+              <option disabled value="">
+                Please select an option
+              </option>
+              <option value="Option 1">apply</option>
+              <option value="Option 2">destroy</option>
             </select>
           </div>
+          <button onClick={handleSubmitS3}>Submit</button>
         </>
+      );
+    } else if (selectedButton == "Edit S3") {
+      return (
+        <div className="form-field">
+          <S3editComponent />
+        </div>
       );
     } else {
       return (
         <div className="form-field">
           {/* <GitComponent /> */}
           <Gitedittest />
+          {/* <S3editcomponent /> */}
           {/* <Gitviewer /> */}
         </div>
       );

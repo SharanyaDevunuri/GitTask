@@ -20,7 +20,8 @@ function GitRepoViewer() {
   const [field5, setField5] = useState("");
   const [field6, setField6] = useState("");
   const [field7, setField7] = useState("");
-
+  const [field8, setField8] = useState("");
+  const [field9, setField9] = useState("");
   const [amiOptions, setAmiOptions] = useState([]);
   const [instanceTypesOptions, setInstanceTypesOptions] = useState([]);
   const [regionOptions, setRegionOptions] = useState([]);
@@ -79,6 +80,7 @@ function GitRepoViewer() {
           throw new Error("Failed to fetch branches");
         }
         const data = await response.json();
+
         setBranches(data);
         setSelectedBranch("main"); // Set the selected branch to "main"
       } catch (error) {
@@ -101,7 +103,7 @@ function GitRepoViewer() {
             throw new Error("Failed to fetch folders");
           }
           const data = await response.json();
-          setSha(data.sha);
+
           const folderEntries = data.filter((entry) => entry.type === "dir");
           setFolders(folderEntries);
         }
@@ -164,7 +166,7 @@ function GitRepoViewer() {
 
       const fileContent = window.atob(data.content);
 
-      console.log(fileContent.match("(?<=instance_name =)([^\n\r]*)"));
+      console.log(fileContent.match("(?<=name =)([^\n\r]*)"));
       setSelectedFileContent(fileContent);
 
       setEditedFileContent(fileContent);
@@ -187,47 +189,47 @@ function GitRepoViewer() {
           ? field5
           : selectedFileContent.match(/account = "([^"]+)"/)[1]
       }"\n` +
-      `instance_name = "${
+      `name = "${
         field4.length > 1
           ? field4
-          : selectedFileContent.match(/instance_name = "([^"]+)"/)[1]
+          : selectedFileContent.match(/name = "([^"]+)"/)[1]
       }"\n` +
       `app = "${
         field6.length > 1
           ? field6
           : selectedFileContent.match(/app = "([^"]+)"/)[1]
       }"\n` +
-      `instance_type = "${
-        field3.length > 1
-          ? field3
-          : selectedFileContent.match(/instance_type = "([^"]+)"/)[1]
+      `bucketName = "${
+        field9.length > 1
+          ? field9
+          : selectedFileContent.match(/bucketName = "([^"]+)"/)[1]
       }"\n` +
-      `ami_id = "${
-        field2.length > 1
-          ? field2
-          : selectedFileContent.match(/ami_id = "([^"]+)"/)[1]
+      `Environment = "${
+        field8.length > 1
+          ? field8
+          : selectedFileContent.match(/Environment = "([^"]+)"/)[1]
       }"\n` +
-      `subnet_id = "${
-        field1.length > 1
-          ? field1
-          : selectedFileContent.match(/subnet_id = "([^"]+)"/)[1]
-      }"\n` +
-      `security_group_ids = ["sg-0cd060c8df19420a8"]\n\n` +
-      `instance_tags = {\n  Environment = "production"\n}`;
+      `action = "${
+        field7.length > 1
+          ? field7
+          : selectedFileContent.match(/action = "([^"]+)"/)[1]
+      }"\n`;
+
     try {
       const encodedContent = window.btoa(editedFileContent);
       //const folderNames = "myapp";
       const randomFolderName =
-        selectedFileContent.match(/instance_name = "([^"]+)"/)[1] +
+        selectedFileContent.match(/name = "([^"]+)"/)[1] +
         "_updated_" +
         Math.random().toString(36).substring(7);
 
       const folderName = selectedFolder;
+      console.log(selectedFolder);
       // ? randomFolderName
       // : selectedFolder + "/" + randomFolderName;
 
       // const filePath = `myapp/${folderName}/terraforms.tfvars`;
-      const url = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${folderName}/terraform.tfvars`;
+      const url = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${folderName}/terraforms.tfvars`;
 
       const branch = selectedBranch;
       console.log("url", url);
@@ -247,31 +249,26 @@ function GitRepoViewer() {
         }),
       });
       // Trigger Jenkins build
-      const jenkinsUrl = "http://localhost:9071/data/trigger-jenkins-build";
+      const jenkinsUrl = "http://localhost:9071/data/trigger-jenkins-builds";
       const jenkinsParams = new URLSearchParams();
       jenkinsParams.append(
         "NAME",
         field4.length > 1
           ? field4
-          : selectedFileContent.match(/instance_name = "([^"]+)"/)[1]
+          : selectedFileContent.match(/name = "([^"]+)"/)[1]
+      );
+
+      jenkinsParams.append(
+        "ENVIRONMENT",
+        field8.length > 1
+          ? field8
+          : selectedFileContent.match(/Environment = "([^"]+)"/)[1]
       );
       jenkinsParams.append(
-        "REGION",
-        field1.length > 1
-          ? field1
-          : selectedFileContent.match(/subnet_id = "([^"]+)"/)[1]
-      );
-      jenkinsParams.append(
-        "AMI",
-        field2.length > 1
-          ? field2
-          : selectedFileContent.match(/ami_id = "([^"]+)"/)[1]
-      );
-      jenkinsParams.append(
-        "INSTANCE_TYPE",
-        field3.length > 1
-          ? field3
-          : selectedFileContent.match(/instance_type = "([^"]+)"/)[1]
+        "BUCKET NAME",
+        field9.length > 1
+          ? field9
+          : selectedFileContent.match(/bucketName = "([^"]+)"/)[1]
       );
       jenkinsParams.append(
         "ACCOUNT",
@@ -325,7 +322,7 @@ function GitRepoViewer() {
 
     swal({
       title: "UPDATED SUCCESSFULLY",
-      text: "Instance Updated",
+      text: "S3 Updated",
       icon: "success",
     });
     // .then(function () {
@@ -368,6 +365,12 @@ function GitRepoViewer() {
   const handleField7Change = (event) => {
     setField7(event.target.value);
   };
+  const handleField8Change = (event) => {
+    setField8(event.target.value);
+  };
+  const handleField9Change = (event) => {
+    setField9(event.target.value);
+  };
 
   console.log(selectedFileContent);
   return (
@@ -384,11 +387,11 @@ function GitRepoViewer() {
       </ul> */}
       {selectedBranch && (
         <>
-          <h2>Service Catalog</h2>
+          <h2>Service Catalog </h2>
           <ul>
             {folders.map(
               (folder) =>
-                folder.name == "EC2" && (
+                folder.name == "S3" && (
                   <li key={folder.path}>
                     <button onClick={() => handleFolderSelect(folder.path)}>
                       {folder.name}
@@ -443,7 +446,7 @@ function GitRepoViewer() {
                 <input
                   type="text"
                   defaultValue={
-                    selectedFileContent.match(/instance_name = "([^"]+)"/)[1]
+                    selectedFileContent.match(/name = "([^"]+)"/)[1]
                   }
                   onChange={handleField4Change}
                 />
@@ -456,86 +459,40 @@ function GitRepoViewer() {
                   onChange={handleField6Change}
                 />
               </div>
-              <div className="form-field">
-                <label>REGION</label>
-                <select onChange={handleField1Change}>
-                  <option value="" selected disabled>
-                    {selectedFileContent.match(/subnet_id = "([^"]+)"/)[1]}
-                  </option>
-                  <option value="us-east-1">us-east-1</option>
-                  <option value="us-east-2">us-east-2</option>
-                  <option value="us-west-1">us-west-1</option>
-                  <option value="us-west-2">us-west-2</option>
-                  <option value="ap-southeast-1">ap-southeast-1</option>
-                  <option value="ap-northeast-1">ap-northeast-1</option>
-                  <option value="eu-west-1">eu-west-1</option>
-                  {/* {regionOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))} */}
-                </select>
-              </div>
-              <div className="form-field">
-                <label>AMI</label>
-                <select onChange={handleField2Change}>
-                  <option value="" selected disabled>
-                    {selectedFileContent.match(/ami_id = "([^"]+)"/)[1]}
-                  </option>
-                  {/* {amiOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))} */}
-                  <option value=" ami-02bf3fea296e7a751 ">
-                    Image ID: ami-02bf3fea296e7a751 OS: websoft9-redis6.0
-                  </option>
-                  <option value="ami-040f3334e1a9b3458">
-                    Image ID: ami-040f3334e1a9b3458 OS: spotlight-win2016-x64
-                  </option>
-                  <option value="ami-0d09e058a2a630df6">
-                    Image ID: ami-0d09e058a2a630df6 OS: bottlerocket-aws-k8s
-                  </option>
-                  <option value="ami-063cc140458d19824 ">
-                    Image ID: ami-063cc140458d19824 OS: bitnami-wildfly
-                  </option>
-                  <option value=" ami-0d351eeaab8a4441c ">
-                    Image ID: ami-0d351eeaab8a4441c OS: gravitational-teleport
-                  </option>
-                </select>
-              </div>
-              <div className="form-field">
-                <label>INSTANCE_TYPE</label>
-                <select onChange={handleField3Change}>
-                  <option value="Please select an option" selected disabled>
-                    {selectedFileContent.match(/instance_type = "([^"]+)"/)[1]}
-                  </option>
-                  {/* {instancetypesOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))} */}
-                  <option value="c4.8xlarge">c4.8xlarge</option>
-                  <option value="t3.2xlarge">t3.2xlarge</option>
-                  <option value="t4g.nano">t4g.nano</option>
-                  <option value="m5d.8xlarge">m5d.8xlarge</option>
-                  <option value="i4i.16xlarge">i4i.16xlarge</option>
-                </select>
-              </div>
 
-              {/* <div className="form-field">
+              <div className="form-field">
+                <label>ENVIRONMENT</label>
+                <input
+                  type="text"
+                  defaultValue={
+                    selectedFileContent.match(/Environment = "([^"]+)"/)[1]
+                  }
+                  onChange={handleField8Change}
+                />
+              </div>
+              <div className="form-field">
+                <label>BUCKET NAME</label>
+                <input
+                  type="text"
+                  defaultValue={
+                    selectedFileContent.match(/bucketName = "([^"]+)"/)[1]
+                  }
+                  onChange={handleField9Change}
+                />
+              </div>
+              <div className="form-field">
                 <label>ACTION</label>
                 <select onChange={handleField7Change}>
-                  <option value="Please select an option" selected disabled>
-                    {selectedFileContent.match(/action = "([^"]+)"/)[1] ==
-                    "Option 1"
-                      ? "apply"
-                      : "destroy"}
+                  <option disabled value="">
+                    defaultValue=
+                    {selectedFileContent.match(/action = "([^"]+)"/)[1]}
                   </option>
                   <option value="Option 1">apply</option>
                   <option value="Option 2">destroy</option>
                 </select>
-              </div> */}
+              </div>
+              {/* <button onClick={handleEditClick}>Edit</button> */}
+              {/* </div> */}
 
               <button onClick={handleSaveClick}>Save</button>
               <button onClick={handleCancelClick}>Cancel</button>
@@ -554,9 +511,7 @@ function GitRepoViewer() {
                 <label>NAME</label>
                 <input
                   type="text"
-                  value={
-                    selectedFileContent.match(/instance_name = "([^"]+)"/)[1]
-                  }
+                  value={selectedFileContent.match(/name = "([^"]+)"/)[1]}
                   disabled
                 />
               </div>
@@ -568,77 +523,30 @@ function GitRepoViewer() {
                   disabled
                 />
               </div>
+
               <div className="form-field">
-                <label>REGION</label>
-                <select disabled>
-                  <option value="" selected disabled>
-                    {selectedFileContent.match(/subnet_id = "([^"]+)"/)[1]}
-                  </option>
-                  <option value="us-east-1">us-east-1</option>
-                  <option value="us-east-2">us-east-2</option>
-                  <option value="us-west-1">us-west-1</option>
-                  <option value="us-west-2">us-west-2</option>
-                  <option value="ap-southeast-1">ap-southeast-1</option>
-                  <option value="ap-northeast-1">ap-northeast-1</option>
-                  <option value="eu-west-1">eu-west-1</option>
-                  {/* {regionOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))} */}
-                </select>
+                <label>ENVIRONMENT</label>
+                <input
+                  disabled
+                  type="text"
+                  value={
+                    selectedFileContent.match(/Environment = "([^"]+)"/)[1]
+                  }
+                />
               </div>
               <div className="form-field">
-                <label>AMI</label>
-                <select disabled>
-                  <option value="" selected disabled>
-                    {selectedFileContent.match(/ami_id = "([^"]+)"/)[1]}
-                  </option>
-                  {/* {amiOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))} */}
-                  <option value=" ami-02bf3fea296e7a751 ">
-                    Image ID: ami-02bf3fea296e7a751 OS: websoft9-redis6.0
-                  </option>
-                  <option value="ami-040f3334e1a9b3458">
-                    Image ID: ami-040f3334e1a9b3458 OS: spotlight-win2016-x64
-                  </option>
-                  <option value="ami-0d09e058a2a630df6">
-                    Image ID: ami-0d09e058a2a630df6 OS: bottlerocket-aws-k8s
-                  </option>
-                  <option value="ami-063cc140458d19824 ">
-                    Image ID: ami-063cc140458d19824 OS: bitnami-wildfly
-                  </option>
-                  <option value=" ami-0d351eeaab8a4441c ">
-                    Image ID: ami-0d351eeaab8a4441c OS: gravitational-teleport
-                  </option>
-                </select>
-              </div>
-              <div className="form-field">
-                <label>INSTANCE_TYPE</label>
-                <select disabled>
-                  <option value="Please select an option" selected disabled>
-                    {selectedFileContent.match(/instance_type = "([^"]+)"/)[1]}
-                  </option>
-                  {/* {instancetypesOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))} */}
-                  <option value="c4.8xlarge">c4.8xlarge</option>
-                  <option value="t3.2xlarge">t3.2xlarge</option>
-                  <option value="t4g.nano">t4g.nano</option>
-                  <option value="m5d.8xlarge">m5d.8xlarge</option>
-                  <option value="i4i.16xlarge">i4i.16xlarge</option>
-                </select>
+                <label>BUCKET NAME</label>
+                <input
+                  disabled
+                  type="text"
+                  value={selectedFileContent.match(/bucketName = "([^"]+)"/)[1]}
+                />
               </div>
               <div className="form-field">
                 <label>ACTION</label>
-                <select disabled>
-                  <option disabled value="">
-                    Please select an option
+                <select selected disabled>
+                  <option disabled>
+                    {selectedFileContent.match(/action = "([^"]+)"/)[1]}
                   </option>
                   <option value="Option 1">apply</option>
                   <option value="Option 2">destroy</option>
