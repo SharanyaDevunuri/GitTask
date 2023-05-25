@@ -235,7 +235,7 @@ function GitRepoViewer() {
       const response = await fetch(url, {
         method: "PUT",
         headers: {
-          Authorization: "Bearer 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",
+          Authorization: "Bearer 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",
           "Content-Type": "application/json",
         },
 
