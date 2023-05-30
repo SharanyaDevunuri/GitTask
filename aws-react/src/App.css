@@ -1,12 +1,109 @@
-body {
+/* body {
   margin: 0;
   padding: 0;
   font-family: sans-serif;
 }
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+.progressbar {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  counter-reset: step;
+  margin: 2rem 0 4rem;
+}
+
+.progressbar::before,
+.progress {
+  content: "";
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  height: 4px;
+  width: 100%;
+  background-color: #dcdcdc;
+  z-index: -1;
+}
+
+.progress {
+  background-color: var(--primary-color);
+  width: 0%;
+  transition: 0.3s;
+}
+
+.progress-step {
+  width: 2.1875rem;
+  height: 2.1875rem;
+  background-color: #dcdcdc;
+  border-radius: 50%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.progress-step::before {
+  counter-increment: step;
+  content: counter(step);
+}
+
+.progress-step::after {
+  content: attr(data-title);
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  font-size: 0.85rem;
+  color: #666;
+}
+
+.progress-step-active {
+  background-color: var(--primary-color);
+  color: #f3f3f3;
+}
+@keyframes animate {
+  from {
+    transform: scale(1, 0);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1, 1);
+    opacity: 1;
+  }
+}
+
+/* Button */
+.btns-group {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1.5rem;
+}
+
+.btn {
+  padding: 0.75rem;
+  display: block;
+  text-decoration: none;
+  background-color: var(--primary-color);
+  color: #f3f3f3;
+  text-align: center;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: 0.3s;
+}
+.btn:hover {
+  box-shadow: 0 0 0 2px #fff, 0 0 0 3px var(--primary-color);
+}
+*/ body {
+  font-family: Montserrat, "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  min-height: 100vh;
+}
 
 .container {
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   height: 100vh;
 }
 
@@ -14,11 +111,11 @@ body {
   display: flex;
   flex-direction: column;
   width: 200px;
-  background-color: #333333;
+  background-color: #2874f0;
+  color: white;
 }
 
 .sidebar__title {
-  color: white;
   font-size: 20px;
   font-weight: bold;
   padding: 20px;
@@ -29,17 +126,16 @@ body {
   align-items: center;
   justify-content: center;
   height: 60px;
-  width: 100%;
   color: white;
   font-size: 16px;
   font-weight: bold;
   border: none;
-  background-color: #4d4d4d;
+  background-color: #000;
   cursor: pointer;
 }
 
 .sidebar__button:hover {
-  background-color: #666666;
+  background-color: #555;
 }
 
 .content {

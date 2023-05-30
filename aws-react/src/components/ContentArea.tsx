@@ -19,6 +19,7 @@ interface AmiOption {
 
 const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
   const [selectedFolder, setSelectedFolder] = useState("");
+  const [approvalStatus, setApprovalStatus] = useState(false);
   const [field1, setField1] = useState("");
   const [field2, setField2] = useState("");
   const [field3, setField3] = useState("");
@@ -28,12 +29,15 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
   const [field7, setField7] = useState("");
   const [field8, setField8] = useState("");
   const [field9, setField9] = useState("");
+  const [progressData, setProgressData] = useState(false);
+  const [mergeStatus, setMergeStatus] = useState();
   const [amiOptions, setAmiOptions] = useState<AmiOption[]>([]);
   const [regionOptions, setRegionOptions] = useState<AmiOption[]>([]);
   const [instancetypesOptions, setinstancetypesOptions] = useState<AmiOption[]>(
     []
   );
   const [actionOptions, setActionOptions] = useState<AmiOption[]>([]);
+  const [shatoken, setShatoken] = useState();
 
   useEffect(() => {
     fetch("http://localhost:9071/data/get-ami")
@@ -106,6 +110,19 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
   }
 
   const handleSubmit = async () => {
+    setProgressData(true);
+    const statusurl =
+      "https://api.github.com/repos/SharanyaDevunuri/terraformRepo/compare/main...Myrepo";
+    console.log("i am in status");
+    const responsestatus = await fetch(statusurl, {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer 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",
+        "Content-Type": "application/json",
+      },
+    });
+
+    setMergeStatus((await responsestatus.json()).status);
     const apiUrl = "https://api.github.com";
     const repoOwner = "SharanyaDevunuri";
     const repoName = "terraformRepo";
@@ -155,23 +172,40 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
     }
 
     // Step 5: Create or update the file on GitHub
-    const branch = "main";
-    const commitMessage = "Update terraforms.tfvars";
+    // const branch = "main";
+    const commitMessage = "Create terraforms.tfvars";
     const updateUrl = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${filePath}`;
 
     const requestOptions = {
       method: "PUT",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: "Bearer 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",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         message: commitMessage,
         content: contentEncoded,
-        branch: branch,
+        // branch: branch,
         sha: data.sha,
       }),
     };
+    const mergeurl =
+      "https://api.github.com/repos/SharanyaDevunuri/terraformRepo/merges";
+    console.log("i am in ec2 merge");
+    const responsemerge = await fetch(mergeurl, {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer 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",
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify({
+        message: "Merge tfvars file",
+        // branch,
+        base: "Myrepo",
+        head: "main",
+      }),
+    });
 
     try {
       // Create or update the file
@@ -216,6 +250,19 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
   };
 
   const handleSubmitS3 = async () => {
+    setProgressData(true);
+    const statusurl =
+      "https://api.github.com/repos/SharanyaDevunuri/terraformRepo/compare/main...Myrepo";
+    console.log("i am in status");
+    const responsestatus = await fetch(statusurl, {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer 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",
+        "Content-Type": "application/json",
+      },
+    });
+
+    setMergeStatus((await responsestatus.json()).status);
     const apiUrl = "https://api.github.com";
     const repoOwner = "SharanyaDevunuri";
     const repoName = "terraformRepo";
@@ -264,23 +311,39 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
     }
 
     // Step 5: Create or update the file on GitHub
-    const branch = "main";
-    const commitMessage = "Update terraforms.tfvars";
+    // const branch = "main";
+    const commitMessage = "Create terraforms.tfvars";
     const updateUrl = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${filePath}`;
 
     const requestOptions = {
       method: "PUT",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: "Bearer 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",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
         message: commitMessage,
         content: contentEncoded,
-        branch: branch,
+        //  branch: branch,
         sha: data.sha,
       }),
     };
+    const mergeurl =
+      "https://api.github.com/repos/SharanyaDevunuri/terraformRepo/merges";
+    const responsemerge = await fetch(mergeurl, {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer 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",
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify({
+        message: "Merge tfvars file",
+        // branch,
+        base: "Myrepo",
+        head: "main",
+      }),
+    });
 
     try {
       // Create or update the file
@@ -417,6 +480,26 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
             </select>
           </div>
           <button onClick={handleSubmit}>Submit</button>
+          {progressData && mergeStatus != "ahead" && (
+            <div>
+              <br />
+              <label>Requested for approval </label>
+              {/* <h1>Requested for approval</h1> */}
+              <progress id="file" value="50" max="100">
+                100%
+              </progress>
+            </div>
+          )}
+          {progressData && mergeStatus === "ahead" && (
+            <div>
+              <br />
+              <label>Approved Successfully</label>
+              {/* <h1>Approved Successfully</h1> */}
+              <progress id="file" value="100" max="100">
+                100%
+              </progress>
+            </div>
+          )}
         </>
       );
     } else if (selectedButton === "Create S3") {

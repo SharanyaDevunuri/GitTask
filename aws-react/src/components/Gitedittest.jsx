@@ -12,6 +12,8 @@ function GitRepoViewer() {
   const [selectedFileContent, setSelectedFileContent] = useState();
   const [editedFileContent, setEditedFileContent] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [progressData, setProgressData] = useState(false);
+  const [mergeStatus, setMergeStatus] = useState();
 
   const [field1, setField1] = useState("");
   const [field2, setField2] = useState("");
@@ -25,6 +27,7 @@ function GitRepoViewer() {
   const [instanceTypesOptions, setInstanceTypesOptions] = useState([]);
   const [regionOptions, setRegionOptions] = useState([]);
   const [sha, setSha] = useState();
+  const [shatoken, setShatoken] = useState();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -161,6 +164,15 @@ function GitRepoViewer() {
       const data = await response.json();
       console.log(data);
       setSha(data.sha);
+      const responseRepo = await fetch(
+        `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${filePath}?ref=${"Myrepo"}`
+      );
+      if (!responseRepo.ok) {
+        throw new Error("Failed to fetch file content");
+      }
+      const dataRepo = await responseRepo.json();
+      console.log(dataRepo);
+      setShatoken(dataRepo.sha);
 
       const fileContent = window.atob(data.content);
 
@@ -174,8 +186,21 @@ function GitRepoViewer() {
     }
   };
 
-  const handleEditClick = () => {
+  const handleEditClick = async () => {
+    setProgressData(true);
     setIsEditing(true);
+    const statusurl =
+      "https://api.github.com/repos/SharanyaDevunuri/terraformRepo/compare/main...Myrepo";
+    console.log("i am in status");
+    const responsestatus = await fetch(statusurl, {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer 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",
+        "Content-Type": "application/json",
+      },
+    });
+
+    setMergeStatus((await responsestatus.json()).status);
   };
 
   const handleSaveClick = async () => {
@@ -223,29 +248,50 @@ function GitRepoViewer() {
         Math.random().toString(36).substring(7);
 
       const folderName = selectedFolder;
+      console.log(selectedFolder);
+      //const folderName = 'sampleRepo/EC2/${selectedFolder}';
       // ? randomFolderName
       // : selectedFolder + "/" + randomFolderName;
 
       // const filePath = `myapp/${folderName}/terraforms.tfvars`;
-      const url = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${folderName}/terraform.tfvars`;
-
-      const branch = selectedBranch;
+      const url = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${folderName}/terraforms.tfvars`;
+      // https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/EC2/wilton_lz8z0e/terraform.tfvars?ref=sampleRepo
+      //const branch = Myrepo;
+      console.log(selectedBranch);
       console.log("url", url);
 
       const response = await fetch(url, {
         method: "PUT",
         headers: {
-          Authorization: "Bearer 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",
+          Authorization: "Bearer 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",
           "Content-Type": "application/json",
         },
 
         body: JSON.stringify({
           message: "Update or create tfvars file",
-          branch,
+          //  branch,
           content: encodedContent,
-          sha: sha,
+          sha: shatoken,
         }),
       });
+      const mergeurl =
+        "https://api.github.com/repos/SharanyaDevunuri/terraformRepo/merges";
+      console.log("i am in merge");
+      const responsemerge = await fetch(mergeurl, {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer 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",
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          message: "Merge tfvars file",
+          // branch,
+          base: "main",
+          head: "Myrepo",
+        }),
+      });
+
       // Trigger Jenkins build
       const jenkinsUrl = "http://localhost:9071/data/trigger-jenkins-build";
       const jenkinsParams = new URLSearchParams();
@@ -329,7 +375,7 @@ function GitRepoViewer() {
       icon: "success",
     });
     // .then(function () {
-    //   window.location.href = "http://localhost:3000/EditUser/undefined";
+
     // });
   };
 
@@ -522,7 +568,6 @@ function GitRepoViewer() {
                   <option value="i4i.16xlarge">i4i.16xlarge</option>
                 </select>
               </div>
-
               {/* <div className="form-field">
                 <label>ACTION</label>
                 <select onChange={handleField7Change}>
@@ -536,9 +581,30 @@ function GitRepoViewer() {
                   <option value="Option 2">destroy</option>
                 </select>
               </div> */}
-
-              <button onClick={handleSaveClick}>Save</button>
-              <button onClick={handleCancelClick}>Cancel</button>
+              <div>
+                <button onClick={handleSaveClick}>Save</button>
+                <button onClick={handleCancelClick}>Cancel</button>
+              </div>
+              {(progressData && mergeStatus != "ahead") ||
+                ("identical" && (
+                  <div>
+                    <br />
+                    <label for="file">Requested for approval </label>
+                    <progress id="file" value="50" max="100">
+                      100%
+                    </progress>
+                  </div>
+                ))}
+              {(progressData && mergeStatus === "ahead") ||
+                ("identical" && (
+                  <div>
+                    <br />
+                    <label for="file">Approved Successfully</label>
+                    <progress id="file" value="100" max="100">
+                      100%
+                    </progress>
+                  </div>
+                ))}
             </>
           ) : (
             <>
