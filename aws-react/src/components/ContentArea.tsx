@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, ChangeEvent } from "react";
+import axios from "axios";
 import "./ContentArea.css";
 import GitComponent from "../components/GitComponent";
 import Gitedittest from "../components/Gitedittest";
 import swal from "sweetalert";
+import LoginForm from "./loginform";
 
 import S3editComponent from "./S3editComponent";
 
@@ -29,6 +31,9 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
   const [field7, setField7] = useState("");
   const [field8, setField8] = useState("");
   const [field9, setField9] = useState("");
+  const [fileContent, setFileContent] = useState("");
+  const [shajen, setShajen] = useState();
+
   const [progressData, setProgressData] = useState(false);
   const [mergeStatus, setMergeStatus] = useState();
   const [amiOptions, setAmiOptions] = useState<AmiOption[]>([]);
@@ -38,6 +43,73 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
   );
   const [actionOptions, setActionOptions] = useState<AmiOption[]>([]);
   const [shatoken, setShatoken] = useState();
+  interface RegionOption {
+    value: string;
+    label: string;
+  }
+
+  interface AMIOption {
+    value: string;
+    label: string;
+  }
+
+  const regionsToAMIs: Record<string, string> = {
+    "us-east-1": "ami-02bf3fea296e7a751",
+    "us-east-2": "ami-040f3334e1a9b3458",
+    "us-west-1": "ami-0f8e81a3da6e2510a",
+    "us-west-2": "ami-063cc140458d19824",
+    "ap-southeast-1": "ami-0d351eeaab8a4441c",
+  };
+
+  const [selectedRegion, setSelectedRegion] = useState<string>("");
+  const [selectedAMI, setSelectedAMI] = useState<string>("");
+
+  const handleField1Changes = (event: ChangeEvent<HTMLSelectElement>) => {
+    const region = event.target.value;
+    setField1(event.target.value);
+    setSelectedRegion(region);
+    const ami = regionsToAMIs[region];
+    setSelectedAMI(ami);
+    if (event.target.value == "us-west-1") {
+      setField2("ami-0f8e81a3da6e2510a");
+    } else if (event.target.value == "us-east-1") {
+      setField2("ami-02bf3fea296e7a751");
+    } else if (event.target.value == "us-east-2") {
+      setField2("ami-040f3334e1a9b3458");
+    } else if (event.target.value == "ap-southeast-1") {
+      setField2("ami-0d351eeaab8a4441c");
+    } else if (event.target.value == "us-west-2") {
+      setField2("ami-063cc140458d19824");
+    }
+  };
+
+  const handleField2Changes = (event: ChangeEvent<HTMLSelectElement>) => {
+    setSelectedAMI(event.target.value);
+    setField2(event.target.value);
+  };
+  interface ContentAreaProps {
+    selectedButton: string | null;
+  }
+
+  interface AmiOption {
+    value: string;
+    label: string;
+  }
+
+  useEffect(() => {
+    // Fetch the file content
+    axios
+      .get(
+        "https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/Jenkinsfile"
+      )
+      .then((response) => {
+        const jenkinscontent = window.atob(response.data.content); // Decoding base64 content
+        setFileContent(jenkinscontent);
+      })
+      .catch((error) => {
+        console.error("Error fetching file content:", error);
+      });
+  }, []);
 
   useEffect(() => {
     fetch("http://localhost:9071/data/get-ami")
@@ -77,8 +149,9 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
     setField1(event.target.value);
   };
 
-  const handleField2Change = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    setField2(event.target.value);
+  const handleField2Change = (event: ChangeEvent<HTMLSelectElement>) => {
+    const ami = event.target.value;
+    setSelectedAMI(ami);
   };
 
   const handleField3Change = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -110,6 +183,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
   }
 
   const handleSubmit = async () => {
+    console.log(field2);
     setProgressData(true);
     const statusurl =
       "https://api.github.com/repos/SharanyaDevunuri/terraformRepo/compare/main...Myrepo";
@@ -117,7 +191,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
     const responsestatus = await fetch(statusurl, {
       method: "GET",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: "Bearer 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",
         "Content-Type": "application/json",
       },
     });
@@ -130,15 +204,16 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
 
     // Step 1: Create the content in the desired format
     const content =
-      `account = "${field5}"\n` +
-      `instance_name = "${field4}"\n` +
-      `app = "${field6}"\n` +
+      // `account = "${field5}"\n` +
+      `tags = "${field4}"\n` +
+      // `app = "${field6}"\n` +
       `instance_type = "${field3}"\n` +
-      `ami_id = "${field2}"\n` +
-      `subnet_id = "${field1}"\n` +
-      `security_group_ids = ["sg-0cd060c8df19420a8"]\n\n` +
-      `instance_tags = {\n  Environment = "production"\n}\n` +
-      `action = "${field7}"\n`;
+      `ami = "${field2}"\n` +
+      `region = "${field1}"\n`;
+    // `security_group_ids = ["sg-0cd060c8df19420a8"]\n\n` +
+    //`tags =  "production"\n`;
+
+    // `action = "apply"\n`;
 
     // Step 2: Encode the content to base64
     const contentEncoded = window.btoa(content);
@@ -151,7 +226,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
     const folderName = selectedFolder
       ? selectedFolder + "/" + randomFolderName
       : randomFolderName;
-    const filePath = `EC2/${folderName}/terraforms.tfvars`;
+    const filePath = `configs/${folderName}/terraforms.tfvars`;
     const fileUrl = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${filePath}`;
 
     // const folderName = selectedFolder
@@ -173,71 +248,142 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
 
     // Step 5: Create or update the file on GitHub
     // const branch = "main";
-    const commitMessage = "Create terraforms.tfvars";
+    const commitMessage = field4;
     const updateUrl = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${filePath}`;
 
-    const requestOptions = {
+    // const requestOptions = {
+    //   method: "PUT",
+    //   headers: {
+    //     Authorization: "Bearer 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",
+    //     "Content-Type": "application/json",
+    //   },
+    //   body: JSON.stringify({
+    //     message: commitMessage,
+    //     content: contentEncoded,
+    //     // branch: branch,
+    //     sha: data.sha,
+    //   }),
+    // };
+    const requestOptions = await fetch(fileUrl, {
       method: "PUT",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: "Bearer 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",
         "Content-Type": "application/json",
       },
+
       body: JSON.stringify({
+        // branch,
         message: commitMessage,
         content: contentEncoded,
         // branch: branch,
         sha: data.sha,
       }),
-    };
+    });
     const mergeurl =
       "https://api.github.com/repos/SharanyaDevunuri/terraformRepo/merges";
     console.log("i am in ec2 merge");
     const responsemerge = await fetch(mergeurl, {
       method: "POST",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: "Bearer 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",
         "Content-Type": "application/json",
       },
 
       body: JSON.stringify({
-        message: "Merge tfvars file",
         // branch,
         base: "Myrepo",
         head: "main",
+        message: "Merge Myrepo into main from create ec2",
+      }),
+    });
+    console.log(fileContent);
+
+    const regex = /configs\/(.*?)\//;
+    const match = fileContent.match(regex);
+    const applyreg = /terraform\s+(\S+)\s+--auto-approve/;
+    const regmatch = fileContent.match(applyreg);
+    console.log(regmatch);
+
+    let modifiedContent = fileContent;
+    if (match && regmatch) {
+      modifiedContent = fileContent.replace(match[1], field4);
+      modifiedContent = modifiedContent.replace(match[1], field4);
+      modifiedContent = modifiedContent.replace(match[1], field4);
+
+      modifiedContent = modifiedContent.replace(regmatch[1], "apply");
+
+      // if (field7 == "Option 2") {
+      //   modifiedContent = modifiedContent.replace(regmatch[1], "destroy");
+      // }
+    }
+    console.log(modifiedContent);
+
+    //const replacevar = fileContent.match(/configs\/([^/]+)/)[1]
+
+    // {fileContent.match(/configs\/([^/]+)/)[1]}
+    console.log(modifiedContent);
+    const jenkinsurl = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/Jenkinsfile`;
+    // https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/EC2/wilton_lz8z0e/terraform.tfvars?ref=sampleRepo
+    //const branch = Myrepo;
+    const responsestatusjen = await fetch(jenkinsurl, {
+      method: "GET",
+      headers: {
+        Authorization: "Bearer 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",
+        "Content-Type": "application/json",
+      },
+    });
+    //console.log(responsestatusjen);
+    const dataRepo = await responsestatusjen.json();
+    console.log(dataRepo.sha);
+    setShajen(dataRepo.sha);
+    console.log(shajen);
+    let shadata = dataRepo.sha;
+    const responsejenkins = await fetch(jenkinsurl, {
+      method: "PUT",
+      headers: {
+        Authorization: "Bearer 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",
+        "Content-Type": "application/json",
+      },
+
+      body: JSON.stringify({
+        message: field4 + " apply",
+        //  branch,
+        content: window.btoa(modifiedContent),
+        sha: shadata,
       }),
     });
 
-    try {
-      // Create or update the file
-      const updateResponse = await fetch(updateUrl, requestOptions);
-      const updateData = await updateResponse.json();
-      console.log("File updated successfully:", updateData);
+    // try {
+    //   // Create or update the file
+    //   const updateResponse = await fetch(updateUrl, requestOptions);
+    //   const updateData = await updateResponse.json();
+    //   console.log("File updated successfully:", updateData);
 
-      // Trigger Jenkins build
-      const jenkinsUrl = "http://localhost:9071/data/trigger-jenkins-build";
-      const jenkinsParams = new URLSearchParams();
-      jenkinsParams.append("NAME", field4);
-      jenkinsParams.append("REGION", field1);
-      jenkinsParams.append("AMI", field2);
-      jenkinsParams.append("INSTANCE_TYPE", field3);
-      jenkinsParams.append("ACCOUNT", field5);
-      jenkinsParams.append("APP", field6);
-      jenkinsParams.append("ACTION", field7);
+    //   // Trigger Jenkins build
+    //   const jenkinsUrl = "http://localhost:9071/data/trigger-jenkins-build";
+    //   const jenkinsParams = new URLSearchParams();
+    //   jenkinsParams.append("NAME", field4);
+    //   jenkinsParams.append("REGION", field1);
+    //   jenkinsParams.append("AMI", field2);
+    //   jenkinsParams.append("INSTANCE_TYPE", field3);
+    //   jenkinsParams.append("ACCOUNT", field5);
+    //   jenkinsParams.append("APP", field6);
+    //   jenkinsParams.append("ACTION", field7);
 
-      const jenkinsRequestOptions = {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: jenkinsParams.toString(),
-      };
+    //   const jenkinsRequestOptions = {
+    //     method: "POST",
+    //     headers: {
+    //       "Content-Type": "application/x-www-form-urlencoded",
+    //     },
+    //     body: jenkinsParams.toString(),
+    //   };
 
-      const jenkinsResponse = await fetch(jenkinsUrl, jenkinsRequestOptions);
-      const jenkinsData = await jenkinsResponse.json();
-      console.log("Jenkins build triggered:", jenkinsData);
-    } catch (error) {
-      console.error("Error updating file or triggering Jenkins build:", error);
-    }
+    //   const jenkinsResponse = await fetch(jenkinsUrl, jenkinsRequestOptions);
+    //   const jenkinsData = await jenkinsResponse.json();
+    //   console.log("Jenkins build triggered:", jenkinsData);
+    // } catch (error) {
+    //   console.error("Error updating file or triggering Jenkins build:", error);
+    // }
 
     swal({
       title: "SUBMITTED",
@@ -257,7 +403,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
     const responsestatus = await fetch(statusurl, {
       method: "GET",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: "Bearer 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",
         "Content-Type": "application/json",
       },
     });
@@ -312,13 +458,14 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
 
     // Step 5: Create or update the file on GitHub
     // const branch = "main";
-    const commitMessage = "Create terraforms.tfvars";
+    const commitMessage = field4;
+
     const updateUrl = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${filePath}`;
 
     const requestOptions = {
       method: "PUT",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: "Bearer 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",
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -333,15 +480,16 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
     const responsemerge = await fetch(mergeurl, {
       method: "POST",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: "Bearer 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",
         "Content-Type": "application/json",
       },
 
       body: JSON.stringify({
-        message: "Merge tfvars file",
         // branch,
-        base: "Myrepo",
-        head: "main",
+
+        base: "main",
+        head: "Myrepo",
+        message: "Merge Myrepo into main from create s3 ",
       }),
     });
 
@@ -350,29 +498,6 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
       const updateResponse = await fetch(updateUrl, requestOptions);
       const updateData = await updateResponse.json();
       console.log("File updated successfully:", updateData);
-
-      // Trigger Jenkins build
-      const jenkinsUrl = "http://localhost:9071/data/trigger-jenkins-builds";
-      const jenkinsParams = new URLSearchParams();
-      jenkinsParams.append("NAME", field4);
-      jenkinsParams.append("ENVIRONMENT", field8);
-      jenkinsParams.append("BUCKET_NAME", field9);
-      jenkinsParams.append("ACCOUNT", field5);
-      jenkinsParams.append("APP", field6);
-      jenkinsParams.append("ACTION", field7);
-      //jenkinsParams.append("ACTION", field7);
-
-      const jenkinsRequestOptions = {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: jenkinsParams.toString(),
-      };
-
-      const jenkinsResponse = await fetch(jenkinsUrl, jenkinsRequestOptions);
-      const jenkinsData = await jenkinsResponse.json();
-      console.log("Jenkins build triggered:", jenkinsData);
     } catch (error) {
       console.error("Error updating file or triggering Jenkins build:", error);
     }
@@ -388,25 +513,22 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
   };
 
   const renderFields = () => {
-    if (selectedButton === "Create EC2") {
+    if (selectedButton === "Request EC2") {
       return (
         <>
-          <div className="form-field">
+          {/* <div className="form-field">
             <label>ACCOUNT (Account name)</label>
             <input type="text" value={field5} onChange={handleField5Change} />
-          </div>
-          <div className="form-field">
-            <label>NAME (Name of person)</label>
-            <input type="text" value={field4} onChange={handleField4Change} />
-          </div>
-          <div className="form-field">
+          </div> */}
+
+          {/* <div className="form-field">
             <label>APP (App config name)</label>
             <input type="text" value={field6} onChange={handleField6Change} />
-          </div>
+          </div> */}
           <div className="form-field">
             <label>REGION</label>
-            <select onChange={handleField1Change}>
-              <option value="" selected disabled>
+            <select onChange={handleField1Changes} value={selectedRegion}>
+              <option value="" disabled>
                 Please select an option
               </option>
               <option value="us-east-1">us-east-1</option>
@@ -414,41 +536,44 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
               <option value="us-west-1">us-west-1</option>
               <option value="us-west-2">us-west-2</option>
               <option value="ap-southeast-1">ap-southeast-1</option>
-              <option value="ap-northeast-1">ap-northeast-1</option>
-              <option value="eu-west-1">eu-west-1</option>
-              {/* {regionOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))} */}
             </select>
           </div>
           <div className="form-field">
             <label>AMI</label>
-            <select onChange={handleField2Change}>
-              <option value="" selected disabled>
+            <select onChange={handleField2Changes} value={selectedAMI}>
+              <option value="" disabled>
                 Please select an option
               </option>
-              {/* {amiOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))} */}
-              <option value=" ami-02bf3fea296e7a751 ">
-                Image ID: ami-02bf3fea296e7a751 OS: websoft9-redis6.0
-              </option>
-              <option value="ami-040f3334e1a9b3458">
-                Image ID: ami-040f3334e1a9b3458 OS: spotlight-win2016-x64
-              </option>
-              <option value="ami-0d09e058a2a630df6">
-                Image ID: ami-0d09e058a2a630df6 OS: bottlerocket-aws-k8s
-              </option>
-              <option value="ami-063cc140458d19824 ">
-                Image ID: ami-063cc140458d19824 OS: bitnami-wildfly
-              </option>
-              <option value=" ami-0d351eeaab8a4441c ">
-                Image ID: ami-0d351eeaab8a4441c OS: gravitational-teleport
-              </option>
+              {selectedRegion === "us-west-1" && (
+                <>
+                  <option value="ami-0f8e81a3da6e2510a">
+                    Image ID: ami-0f8e81a3da6e2510a
+                  </option>
+                </>
+              )}
+              {selectedRegion === "us-east-1" && (
+                <>
+                  <option value="ami-02bf3fea296e7a751">
+                    Image ID: ami-02bf3fea296e7a751
+                  </option>
+                </>
+              )}
+              {selectedRegion === "ap-southeast-1" && (
+                <>
+                  <option value="ami-0d351eeaab8a4441c">
+                    Image ID: ami-0d351eeaab8a4441c
+                  </option>
+                </>
+              )}
+              {selectedRegion === "us-west-2" && (
+                <>
+                  <option value="ami-0f8e81a3da6e2510a">
+                    Image ID: ami-0f8e81a3da6e2510a
+                  </option>
+                </>
+              )}
+
+              {/* Add other AMI options for other regions */}
             </select>
           </div>
           <div className="form-field">
@@ -462,14 +587,19 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
                   {option.label}
                 </option>
               ))} */}
+
               <option value="c4.8xlarge">c4.8xlarge</option>
               <option value="t3.2xlarge">t3.2xlarge</option>
-              <option value="t4g.nano">t4g.nano</option>
+              <option value="t2.micro">t2.micro</option>
               <option value="m5d.8xlarge">m5d.8xlarge</option>
               <option value="i4i.16xlarge">i4i.16xlarge</option>
             </select>
           </div>
           <div className="form-field">
+            <label>TAG NAME</label>
+            <input type="text" value={field4} onChange={handleField4Change} />
+          </div>
+          {/* <div className="form-field">
             <label>ACTION</label>
             <select value={field7} onChange={handleSelectChange}>
               <option disabled value="">
@@ -478,31 +608,11 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
               <option value="Option 1">apply</option>
               <option value="Option 2">destroy</option>
             </select>
-          </div>
-          <button onClick={handleSubmit}>Submit</button>
-          {progressData && mergeStatus != "ahead" && (
-            <div>
-              <br />
-              <label>Requested for approval </label>
-              {/* <h1>Requested for approval</h1> */}
-              <progress id="file" value="50" max="100">
-                100%
-              </progress>
-            </div>
-          )}
-          {progressData && mergeStatus === "ahead" && (
-            <div>
-              <br />
-              <label>Approved Successfully</label>
-              {/* <h1>Approved Successfully</h1> */}
-              <progress id="file" value="100" max="100">
-                100%
-              </progress>
-            </div>
-          )}
+          </div> */}
+          <button onClick={handleSubmit}>Submit EC2 request</button>
         </>
       );
-    } else if (selectedButton === "Create S3") {
+    } else if (selectedButton === "Request S3") {
       return (
         <>
           <div className="form-field">
@@ -526,7 +636,7 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
             <label>BUCKET NAME</label>
             <input type="text" value={field9} onChange={handleField9Change} />
           </div>
-          <div className="form-field">
+          {/* <div className="form-field">
             <label>ACTION</label>
             <select value={field7} onChange={handleSelectChange}>
               <option disabled value="">
@@ -535,14 +645,38 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
               <option value="Option 1">apply</option>
               <option value="Option 2">destroy</option>
             </select>
-          </div>
-          <button onClick={handleSubmitS3}>Submit</button>
+          </div> */}
+          <button onClick={handleSubmitS3}>Submit S3</button>
+          {/* {progressData && mergeStatus != "identical" && (
+            <div>
+              <br />
+              <label>Requested for approval </label>
+              <progress id="file" value="50" max="100">
+                100%
+              </progress>
+            </div>
+          )}
+          {progressData && mergeStatus == "identical" && (
+            <div>
+              <br />
+              <label>Approved Successfully</label>
+              <progress id="file" value="100" max="100">
+                100%
+              </progress>
+            </div>
+          )} */}
         </>
       );
-    } else if (selectedButton == "Edit S3") {
+    } else if (selectedButton == "Modify S3") {
       return (
         <div className="form-field">
           <S3editComponent />
+        </div>
+      );
+    } else if (selectedButton == "Login") {
+      return (
+        <div className="form-field">
+          <LoginForm />
         </div>
       );
     } else {
@@ -561,7 +695,9 @@ const ContentArea: React.FC<ContentAreaProps> = ({ selectedButton }) => {
     <div className="content-area">
       {selectedButton && (
         <>
-          <h2>{selectedButton}</h2>
+          <h2 style={{ marginLeft: "336px", marginBottom: "28px" }}>
+            {selectedButton}
+          </h2>
           {renderFields()}
         </>
       )}

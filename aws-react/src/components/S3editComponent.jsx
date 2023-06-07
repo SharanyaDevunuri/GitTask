@@ -197,7 +197,7 @@ function GitRepoViewer() {
     const responsestatus = await fetch(statusurl, {
       method: "GET",
       headers: {
-        Authorization: "Bearer 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",
+        Authorization: "Bearer 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",
         "Content-Type": "application/json",
       },
     });
@@ -252,7 +252,7 @@ function GitRepoViewer() {
       console.log(selectedFolder);
       // ? randomFolderName
       // : selectedFolder + "/" + randomFolderName;
-
+      const commitMessage = field4;
       // const filePath = `myapp/${folderName}/terraforms.tfvars`;
       const url = `https://api.github.com/repos/SharanyaDevunuri/terraformRepo/contents/${folderName}/terraforms.tfvars`;
 
@@ -262,12 +262,12 @@ function GitRepoViewer() {
       const response = await fetch(url, {
         method: "PUT",
         headers: {
-          Authorization: "Bearer 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",
+          Authorization: "Bearer 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",
           "Content-Type": "application/json",
         },
 
         body: JSON.stringify({
-          message: "Update or create tfvars file",
+          message: selectedFileContent.match(/name = "([^"]+)"/)[1],
           // branch,
           content: encodedContent,
           sha: shatoken,
@@ -278,15 +278,16 @@ function GitRepoViewer() {
       const responsemerge = await fetch(mergeurl, {
         method: "POST",
         headers: {
-          Authorization: "Bearer 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",
+          Authorization: "Bearer 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",
           "Content-Type": "application/json",
         },
 
         body: JSON.stringify({
-          message: "Merge tfvars file",
+          message: field4,
           // branch,
-          base: "Myrepo",
-          head: "main",
+          base: "main",
+          head: "Myrepo",
+          // message: "Merge Myrepo into main from s3 edit",
         }),
       });
       // Trigger Jenkins build
@@ -298,7 +299,6 @@ function GitRepoViewer() {
           ? field4
           : selectedFileContent.match(/name = "([^"]+)"/)[1]
       );
-
       jenkinsParams.append(
         "ENVIRONMENT",
         field8.length > 1
@@ -306,11 +306,12 @@ function GitRepoViewer() {
           : selectedFileContent.match(/Environment = "([^"]+)"/)[1]
       );
       jenkinsParams.append(
-        "BUCKET NAME",
+        "BUCKET_NAME",
         field9.length > 1
           ? field9
           : selectedFileContent.match(/bucketName = "([^"]+)"/)[1]
       );
+
       jenkinsParams.append(
         "ACCOUNT",
         field5.length > 1
@@ -329,7 +330,6 @@ function GitRepoViewer() {
           ? field7
           : selectedFileContent.match(/action = "([^"]+)"/)[1]
       );
-
       const jenkinsRequestOptions = {
         method: "POST",
         headers: {
@@ -341,34 +341,17 @@ function GitRepoViewer() {
       const jenkinsResponse = await fetch(jenkinsUrl, jenkinsRequestOptions);
       const jenkinsData = await jenkinsResponse.json();
       console.log("Jenkins build triggered:", jenkinsData);
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to save file content: ${response.status} ${response.statusText}`
-        );
-      }
-
-      const data = await response.json();
-
-      console.log("Response Data:", data);
-
-      // Update the selectedFileContent state with the updated content
-      const updatedContent = window.atob(data.content);
-      setSelectedFileContent(updatedContent);
-
-      setIsEditing(false);
     } catch (error) {
-      console.error(error);
+      console.error("Error updating file or triggering Jenkins build:", error);
     }
 
     swal({
       title: "UPDATED SUCCESSFULLY",
       text: "S3 Updated",
       icon: "success",
+    }).then(function () {
+      window.location.href = "http://localhost:3000";
     });
-    // .then(function () {
-    //   window.location.href = "http://localhost:3000";
-    // });
   };
 
   const handleCancelClick = () => {
@@ -537,26 +520,24 @@ function GitRepoViewer() {
 
               <button onClick={handleSaveClick}>Save</button>
               <button onClick={handleCancelClick}>Cancel</button>
-              {(progressData && mergeStatus != "ahead") ||
-                ("identical" && (
-                  <div>
-                    <br />
-                    <label for="file">Requested for approval </label>
-                    <progress id="file" value="50" max="100">
-                      100%
-                    </progress>
-                  </div>
-                ))}
-              {(progressData && mergeStatus === "ahead") ||
-                ("identical" && (
-                  <div>
-                    <br />
-                    <label for="file">Approved Successfully</label>
-                    <progress id="file" value="100" max="100">
-                      100%
-                    </progress>
-                  </div>
-                ))}
+              {/* {progressData && mergeStatus != "identical" && (
+                <div>
+                  <br />
+                  <label for="file">Requested for approval </label>
+                  <progress id="file" value="50" max="100">
+                    100%
+                  </progress>
+                </div>
+              )}
+              {progressData && mergeStatus === "identical" && (
+                <div>
+                  <br />
+                  <label for="file">Approved Successfully</label>
+                  <progress id="file" value="100" max="100">
+                    100%
+                  </progress>
+                </div>
+              )} */}
             </>
           ) : (
             <>

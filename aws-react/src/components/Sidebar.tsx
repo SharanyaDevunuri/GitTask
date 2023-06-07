@@ -8,7 +8,8 @@ interface Props {
 
 const Sidebar: React.FC<Props> = ({ handleButtonClick, selectedButton }) => {
   const buttons = [
-    "Create EC2",
+    // "Login",
+    "Request EC2",
 
     // 'Security Group',
     // 'VPC',
@@ -18,9 +19,9 @@ const Sidebar: React.FC<Props> = ({ handleButtonClick, selectedButton }) => {
     // 'Load Balancer',
     // 'ECS',
     // 'EKS'
-    "Edit EC2",
-    "Create S3",
-    "Edit S3",
+    "Modify EC2",
+    "Request S3",
+    "Modify S3",
   ];
 
   return (
